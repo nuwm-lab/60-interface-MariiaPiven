@@ -1,4 +1,5 @@
 ﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -70,6 +71,8 @@ namespace LabWork
 
     // Base polygon model with ordering and area via shoelace
     public abstract class Polygon : GeometricShape
+    // Base polygon model with ordering and area via shoelace
+    public abstract class Polygon
     {
         private readonly List<Point> _vertices = new();
         public IReadOnlyList<Point> Vertices => _vertices;
@@ -90,6 +93,8 @@ namespace LabWork
 
         // Virtual description to demonstrate dynamic dispatch
         public override string Describe() => $"Багатокутник на {VertexCount} вершинах";
+        // Virtual description to demonstrate dynamic dispatch
+        public virtual string Describe() => $"Багатокутник на {VertexCount} вершинах";
 
         public void SetVertices(IEnumerable<Point> points)
         {
@@ -120,6 +125,7 @@ namespace LabWork
         protected virtual void ValidateAfterOrdering() { }
 
         public override double CalculateArea()
+        public virtual double CalculateArea()
         {
             // Shoelace formula (requires ordered polygon without self-intersections)
             double sum = 0;
@@ -243,6 +249,45 @@ namespace LabWork
 
         public static void PrintVertices(IReadOnlyList<Point> vertices, string title)
         {
+        public override string Describe() => "Опуклий чотирикутник";
+
+        protected override void ValidateAfterOrdering()
+        {
+            // Strict convexity: consistent cross product signs and no collinear adjacent triples
+            int n = Vertices.Count;
+            double? sign = null;
+            for (int i = 0; i < n; i++)
+            {
+                var a = Vertices[i];
+                var b = Vertices[(i + 1) % n];
+                var c = Vertices[(i + 2) % n];
+                double cross = GeometryUtils.Cross(a, b, c);
+                if (GeometryUtils.IsZero(cross))
+                    throw new ArgumentException("Суміжні вершини дають колінеарність — фігура не опукла.");
+                double s = Math.Sign(cross);
+                sign ??= s;
+                if (Math.Sign(cross) != sign)
+                    throw new ArgumentException("Чотирикутник не опуклий або вершини подані у невірному порядку.");
+            }
+        }
+    }
+
+    internal static class ConsoleUI
+    {
+        public static List<Point> ReadVertices(int count, string label)
+        {
+            var pts = new List<Point>(count);
+            for (int i = 0; i < count; i++)
+            {
+                double x = ReadDouble($"Введіть координату x{i + 1} ({label}): ");
+                double y = ReadDouble($"Введіть координату y{i + 1} ({label}): ");
+                pts.Add(new Point(x, y));
+            }
+            return pts;
+        }
+
+        public static void PrintVertices(IReadOnlyList<Point> vertices, string title)
+        {
             Console.WriteLine(title);
             for (int i = 0; i < vertices.Count; i++)
                 Console.WriteLine($"Вершина {i + 1}: {vertices[i]}");
@@ -292,6 +337,8 @@ namespace LabWork
             // Створюємо масив геометричних фігур для демонстрації поліморфізму
             List<GeometricShape> shapes = new List<GeometricShape>();
 
+        private static void Main()
+        {
             // Поліморфне створення: користувач обирає фігуру в рантаймі
             Polygon shape;
             while (true)
@@ -367,6 +414,9 @@ namespace LabWork
 
             Console.WriteLine("\n\nНатисніть будь-яку клавішу для завершення програми...");
             Console.ReadKey();
+            Console.WriteLine($"\n{shape.Describe()}");
+            ConsoleUI.PrintVertices(shape.Vertices, "Координати вершин:");
+            Console.WriteLine($"Площа: {shape.CalculateArea():F2}");
 
             // Підказка для експерименту: Змініть virtual Describe() на звичайний метод у базовому класі
             // і приберіть override у похідних (або замініть на 'new'). Тоді shape.Describe() при посиланні Polygon
