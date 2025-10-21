@@ -26,69 +26,31 @@ namespace LabWork
         }
         public static double Cross(Point a, Point b, Point c)
         {
-            // (b - a) x (c - a)
             return (b.X - a.X) * (c.Y - a.Y) - (b.Y - a.Y) * (c.X - a.X);
         }
     }
 
-    // Абстрактний базовий клас для всіх геометричних фігур
-    public abstract class GeometricShape
+    /// <summary>
+    /// Interface for geometric shapes
+    /// </summary>
+    public interface IShape
     {
-        protected string _name;
-        protected DateTime _createdAt;
-
-        // Конструктор абстрактного класу
-        protected GeometricShape(string name)
-        {
-            _name = name;
-            _createdAt = DateTime.Now;
-            Console.WriteLine($"[Конструктор GeometricShape] Створено об'єкт '{_name}' о {_createdAt:HH:mm:ss}");
-        }
-
-        // Деструктор (фіналізатор)
-        ~GeometricShape()
-        {
-            Console.WriteLine($"[Деструктор GeometricShape] Видалення об'єкта '{_name}'");
-        }
-
-        // Абстрактні методи, які мають бути реалізовані в похідних класах
-        public abstract double CalculateArea();
-        public abstract double CalculatePerimeter();
-        public abstract string Describe();
-
-        // Загальний метод для виведення інформації
-        public virtual void DisplayInfo()
-        {
-            Console.WriteLine($"\n{'=',40}");
-            Console.WriteLine($"Фігура: {Describe()}");
-            Console.WriteLine($"Час створення: {_createdAt:HH:mm:ss.fff}");
-            Console.WriteLine($"Площа: {CalculateArea():F2}");
-            Console.WriteLine($"Периметр: {CalculatePerimeter():F2}");
-            Console.WriteLine($"{'=',40}");
-        }
+        string Describe();
+        double CalculateArea();
+        double CalculatePerimeter();
+        void DisplayInfo();
     }
 
     // Base polygon model with ordering and area via shoelace
-    public abstract class Polygon : GeometricShape
+    public abstract class Polygon : IShape
     {
         private readonly List<Point> _vertices = new();
         public IReadOnlyList<Point> Vertices => _vertices;
         protected abstract int ExpectedVertexCount { get; }
-        public int VertexCount => ExpectedVertexCount;
+        public int VertexCount => ExpectedVertexCount; // expose for UI
 
-        // Конструктор базового класу Polygon
-        protected Polygon(string name) : base(name)
-        {
-            Console.WriteLine($"[Конструктор Polygon] Ініціалізація багатокутника '{name}'");
-        }
-
-        // Деструктор Polygon
-        ~Polygon()
-        {
-            Console.WriteLine($"[Деструктор Polygon] Очищення ресурсів багатокутника '{_name}'");
-        }
-
-        public override string Describe() => $"Багатокутник на {VertexCount} вершинах";
+        // Virtual description to demonstrate dynamic dispatch
+        public virtual string Describe() => $"Багатокутник на {VertexCount} вершинах";
 
         public void SetVertices(IEnumerable<Point> points)
         {
@@ -118,7 +80,7 @@ namespace LabWork
 
         protected virtual void ValidateAfterOrdering() { }
 
-        public override double CalculateArea()
+        public virtual double CalculateArea()
         {
             // Shoelace formula (requires ordered polygon without self-intersections)
             double sum = 0;
@@ -132,7 +94,7 @@ namespace LabWork
             return Math.Abs(sum) / 2.0;
         }
 
-        public override double CalculatePerimeter()
+        public virtual double CalculatePerimeter()
         {
             double perimeter = 0;
             int n = _vertices.Count;
@@ -145,10 +107,13 @@ namespace LabWork
             return perimeter;
         }
 
-        public override void DisplayInfo()
+        public virtual void DisplayInfo()
         {
-            base.DisplayInfo();
-            ConsoleUI.PrintVertices(Vertices, "Координати вершин:");
+            Console.WriteLine($"\n{new string('=', 60)}");
+            Console.WriteLine($"Фігура: {Describe()}");
+            Console.WriteLine($"Площа: {CalculateArea():F2}");
+            Console.WriteLine($"Периметр: {CalculatePerimeter():F2}");
+            Console.WriteLine($"{new string('=', 60)}");
         }
     }
 
@@ -158,18 +123,6 @@ namespace LabWork
     public sealed class Triangle : Polygon
     {
         protected override int ExpectedVertexCount => 3;
-
-        // Конструктор трикутника
-        public Triangle() : base("Трикутник")
-        {
-            Console.WriteLine($"[Конструктор Triangle] Трикутник готовий до використання");
-        }
-
-        // Деструктор трикутника
-        ~Triangle()
-        {
-            Console.WriteLine($"[Деструктор Triangle] Знищення трикутника");
-        }
 
         public override string Describe() => "Трикутник";
 
@@ -190,18 +143,6 @@ namespace LabWork
     public sealed class ConvexQuadrilateral : Polygon
     {
         protected override int ExpectedVertexCount => 4;
-
-        // Конструктор опуклого чотирикутника
-        public ConvexQuadrilateral() : base("Опуклий чотирикутник")
-        {
-            Console.WriteLine($"[Конструктор ConvexQuadrilateral] Опуклий чотирикутник готовий до використання");
-        }
-
-        // Деструктор опуклого чотирикутника
-        ~ConvexQuadrilateral()
-        {
-            Console.WriteLine($"[Деструктор ConvexQuadrilateral] Знищення опуклого чотирикутника");
-        }
 
         public override string Describe() => "Опуклий чотирикутник";
 
@@ -226,37 +167,100 @@ namespace LabWork
         }
     }
 
-    internal static class ConsoleUI
+    /// <summary>
+    /// Service for console input
+    /// </summary>
+    internal static class InputService
     {
         public static List<Point> ReadVertices(int count, string label)
         {
+            Console.WriteLine($"\nВведіть {count} вершини для '{label}':");
             var pts = new List<Point>(count);
             for (int i = 0; i < count; i++)
             {
-                double x = ReadDouble($"Введіть координату x{i + 1} ({label}): ");
-                double y = ReadDouble($"Введіть координату y{i + 1} ({label}): ");
+                double x = ReadDouble($"  x{i + 1}: ");
+                double y = ReadDouble($"  y{i + 1}: ");
                 pts.Add(new Point(x, y));
             }
             return pts;
         }
 
-        public static void PrintVertices(IReadOnlyList<Point> vertices, string title)
-        {
-            Console.WriteLine(title);
-            for (int i = 0; i < vertices.Count; i++)
-                Console.WriteLine($"Вершина {i + 1}: {vertices[i]}");
-        }
-
-        private static double ReadDouble(string prompt)
+        public static double ReadDouble(string prompt)
         {
             while (true)
             {
                 Console.Write(prompt);
                 var s = Console.ReadLine();
-                if (double.TryParse(s, NumberStyles.Float, CultureInfo.CurrentCulture, out double v))
+                if (string.IsNullOrWhiteSpace(s))
+                {
+                    Console.WriteLine("Введіть число.");
+                    continue;
+                }
+                if (double.TryParse(s.Trim().Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out double v))
                     return v;
                 Console.WriteLine("Некоректне число. Спробуйте ще раз.");
             }
+        }
+
+        public static int ReadInt(string prompt, int min, int max)
+        {
+            while (true)
+            {
+                Console.Write(prompt);
+                var s = Console.ReadLine();
+                if (int.TryParse(s, out int v) && v >= min && v <= max)
+                    return v;
+                Console.WriteLine($"Введіть число від {min} до {max}.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Service for console output
+    /// </summary>
+    internal static class OutputService
+    {
+        public static void PrintHeader(string title)
+        {
+            Console.WriteLine($"\n{new string('═', 62)}");
+            Console.WriteLine($"  {title}");
+            Console.WriteLine($"{new string('═', 62)}");
+        }
+
+        public static void PrintVertices(IReadOnlyList<Point> vertices, string title)
+        {
+            Console.WriteLine($"\n{title}");
+            for (int i = 0; i < vertices.Count; i++)
+                Console.WriteLine($"  Вершина {i + 1}: {vertices[i]}");
+        }
+
+        public static void PrintShapeInfo(IShape shape)
+        {
+            if (shape is Polygon polygon)
+            {
+                Console.WriteLine($"\nТип фігури: {shape.Describe()}");
+                PrintVertices(polygon.Vertices, "Координати вершин:");
+                Console.WriteLine($"Площа: {shape.CalculateArea():F2}");
+                Console.WriteLine($"Периметр: {shape.CalculatePerimeter():F2}");
+            }
+            else
+            {
+                shape.DisplayInfo();
+            }
+        }
+
+        public static void PrintError(string message)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"Помилка: {message}");
+            Console.ResetColor();
+        }
+
+        public static void PrintSuccess(string message)
+        {
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine(message);
+            Console.ResetColor();
         }
     }
 
@@ -264,57 +268,74 @@ namespace LabWork
     {
         private static void Main()
         {
-            Console.WriteLine("╔════════════════════════════════════════════════════════════╗");
-            Console.WriteLine("║  ДЕМОНСТРАЦІЯ РОБОТИ З АБСТРАКТНИМИ КЛАСАМИ ТА ПОЛІМОРФІЗМОМ  ║");
-            Console.WriteLine("╚════════════════════════════════════════════════════════════╝\n");
+            OutputService.PrintHeader("ДЕМОНСТРАЦІЯ РОБОТИ З ІНТЕРФЕЙСАМИ ТА ПОЛІМОРФІЗМОМ");
 
-            // Поліморфне створення: користувач обирає фігуру в рантаймі
-            Polygon shape;
-            while (true)
-            {
-                Console.Write("Оберіть фігуру (3 - трикутник, 4 - опуклий чотирикутник): ");
-                var s = Console.ReadLine();
-                if (int.TryParse(s, out int n))
-                {
-                    if (n == 3) { shape = new Triangle(); break; }
-                    if (n == 4) { shape = new ConvexQuadrilateral(); break; }
-                }
-                Console.WriteLine("Некоректний вибір. Вкажіть 3 або 4.\n");
-            }
+            // Create shape using interface
+            IShape shape = CreateShape();
+            
+            // Input vertices
+            InputVertices(shape);
 
-            Console.WriteLine();
+            // Display results using interface
+            Console.WriteLine("\n" + new string('─', 62));
+            OutputService.PrintShapeInfo(shape);
+            Console.WriteLine(new string('─', 62));
 
-            // Ввід вершин із використанням базового посилання (демонстрація динамічного поліморфізму)
+            // Demonstrate polymorphism
+            DemonstratePolymorphism(shape);
+
+            Console.WriteLine("\n\nНатисніть Enter для завершення...");
+            Console.ReadLine();
+        }
+
+        private static IShape CreateShape()
+        {
+            Console.WriteLine("\nОберіть тип фігури:");
+            Console.WriteLine("  3 - Трикутник");
+            Console.WriteLine("  4 - Опуклий чотирикутник");
+            
+            int choice = InputService.ReadInt("\nВаш вибір: ", 3, 4);
+            
+            IShape shape = choice == 3 ? new Triangle() : (IShape)new ConvexQuadrilateral();
+            
+            OutputService.PrintSuccess($"\n✓ Створено: {shape.Describe()}");
+            return shape;
+        }
+
+        private static void InputVertices(IShape shape)
+        {
+            if (shape is not Polygon polygon)
+                return;
+
             while (true)
             {
                 try
                 {
-                    var pts = ConsoleUI.ReadVertices(shape.VertexCount, shape.Describe().ToLower());
-                    shape.SetVertices(pts); // викликає перевірки, специфічні для похідного класу
+                    var pts = InputService.ReadVertices(polygon.VertexCount, shape.Describe().ToLower());
+                    polygon.SetVertices(pts);
+                    OutputService.PrintSuccess("\n✓ Вершини успішно встановлено!");
                     break;
                 }
                 catch (ArgumentException ex)
                 {
-                    Console.WriteLine($"Помилка: {ex.Message}\n");
+                    OutputService.PrintError(ex.Message);
                 }
             }
+        }
 
-            Console.WriteLine("\n" + new string('─', 60));
-            Console.WriteLine("РЕЗУЛЬТАТИ ОБЧИСЛЕНЬ");
-            Console.WriteLine(new string('─', 60));
-
-            // Демонстрація поліморфізму через абстрактний клас
-            shape.DisplayInfo();
-
-            Console.WriteLine("\n" + new string('─', 60));
-            Console.WriteLine("ДОДАТКОВА ІНФОРМАЦІЯ ПРО ПОЛІМОРФІЗМ");
-            Console.WriteLine(new string('─', 60));
-            Console.WriteLine($"Тип змінної: {nameof(GeometricShape)}");
-            Console.WriteLine($"Фактичний тип об'єкта: {shape.GetType().Name}");
-            Console.WriteLine($"Метод Describe() викликається динамічно: {shape.Describe()}");
-
-            Console.WriteLine("\n\nНатисніть будь-яку клавішу для завершення програми...");
-            Console.ReadKey();
+        private static void DemonstratePolymorphism(IShape shape)
+        {
+            Console.WriteLine("\n" + new string('─', 62));
+            Console.WriteLine("ДЕМОНСТРАЦІЯ ПОЛІМОРФІЗМУ");
+            Console.WriteLine(new string('─', 62));
+            
+            Console.WriteLine($"Тип інтерфейсу: {nameof(IShape)}");
+            Console.WriteLine($"Фактичний тип: {shape.GetType().Name}");
+            Console.WriteLine($"Реалізує IShape: {shape is IShape}");
+            Console.WriteLine($"\nВиклик через інтерфейс:");
+            Console.WriteLine($"  {nameof(IShape.Describe)}() => \"{shape.Describe()}\"");
+            Console.WriteLine($"  {nameof(IShape.CalculateArea)}() => {shape.CalculateArea():F2}");
+            Console.WriteLine($"  {nameof(IShape.CalculatePerimeter)}() => {shape.CalculatePerimeter():F2}");
         }
     }
 }
