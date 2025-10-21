@@ -1,4 +1,3 @@
-﻿using System;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -71,13 +70,11 @@ namespace LabWork
 
     // Base polygon model with ordering and area via shoelace
     public abstract class Polygon : GeometricShape
-    // Base polygon model with ordering and area via shoelace
-    public abstract class Polygon
     {
         private readonly List<Point> _vertices = new();
         public IReadOnlyList<Point> Vertices => _vertices;
         protected abstract int ExpectedVertexCount { get; }
-        public int VertexCount => ExpectedVertexCount; // expose for UI
+        public int VertexCount => ExpectedVertexCount;
 
         // Конструктор базового класу Polygon
         protected Polygon(string name) : base(name)
@@ -91,10 +88,7 @@ namespace LabWork
             Console.WriteLine($"[Деструктор Polygon] Очищення ресурсів багатокутника '{_name}'");
         }
 
-        // Virtual description to demonstrate dynamic dispatch
         public override string Describe() => $"Багатокутник на {VertexCount} вершинах";
-        // Virtual description to demonstrate dynamic dispatch
-        public virtual string Describe() => $"Багатокутник на {VertexCount} вершинах";
 
         public void SetVertices(IEnumerable<Point> points)
         {
@@ -125,7 +119,6 @@ namespace LabWork
         protected virtual void ValidateAfterOrdering() { }
 
         public override double CalculateArea()
-        public virtual double CalculateArea()
         {
             // Shoelace formula (requires ordered polygon without self-intersections)
             double sum = 0;
@@ -249,45 +242,6 @@ namespace LabWork
 
         public static void PrintVertices(IReadOnlyList<Point> vertices, string title)
         {
-        public override string Describe() => "Опуклий чотирикутник";
-
-        protected override void ValidateAfterOrdering()
-        {
-            // Strict convexity: consistent cross product signs and no collinear adjacent triples
-            int n = Vertices.Count;
-            double? sign = null;
-            for (int i = 0; i < n; i++)
-            {
-                var a = Vertices[i];
-                var b = Vertices[(i + 1) % n];
-                var c = Vertices[(i + 2) % n];
-                double cross = GeometryUtils.Cross(a, b, c);
-                if (GeometryUtils.IsZero(cross))
-                    throw new ArgumentException("Суміжні вершини дають колінеарність — фігура не опукла.");
-                double s = Math.Sign(cross);
-                sign ??= s;
-                if (Math.Sign(cross) != sign)
-                    throw new ArgumentException("Чотирикутник не опуклий або вершини подані у невірному порядку.");
-            }
-        }
-    }
-
-    internal static class ConsoleUI
-    {
-        public static List<Point> ReadVertices(int count, string label)
-        {
-            var pts = new List<Point>(count);
-            for (int i = 0; i < count; i++)
-            {
-                double x = ReadDouble($"Введіть координату x{i + 1} ({label}): ");
-                double y = ReadDouble($"Введіть координату y{i + 1} ({label}): ");
-                pts.Add(new Point(x, y));
-            }
-            return pts;
-        }
-
-        public static void PrintVertices(IReadOnlyList<Point> vertices, string title)
-        {
             Console.WriteLine(title);
             for (int i = 0; i < vertices.Count; i++)
                 Console.WriteLine($"Вершина {i + 1}: {vertices[i]}");
@@ -308,37 +262,12 @@ namespace LabWork
 
     internal static class Program
     {
-        // Допоміжний метод для демонстрації життєвого циклу трикутника
-        private static void CreateAndDestroyTriangle()
-        {
-            Console.WriteLine(">>> Викликаємо конструктори:");
-            var tempTriangle = new Triangle();
-            tempTriangle.SetVertices(new[] { new Point(0, 0), new Point(4, 0), new Point(2, 3) });
-            Console.WriteLine($"✓ Площа створеного трикутника: {tempTriangle.CalculateArea():F2}");
-            Console.WriteLine(">>> Об'єкт виходить за межі області видимості...");
-        } // об'єкт стає недоступним, але деструктор викличеться пізніше
-
-        // Допоміжний метод для демонстрації життєвого циклу чотирикутника
-        private static void CreateAndDestroyQuadrilateral()
-        {
-            Console.WriteLine(">>> Викликаємо конструктори:");
-            var tempQuad = new ConvexQuadrilateral();
-            tempQuad.SetVertices(new[] { new Point(0, 0), new Point(3, 0), new Point(3, 3), new Point(0, 3) });
-            Console.WriteLine($"✓ Площа створеного чотирикутника: {tempQuad.CalculateArea():F2}");
-            Console.WriteLine(">>> Об'єкт виходить за межі області видимості...");
-        } // об'єкт стає недоступним, але деструктор викличеться пізніше
-
         private static void Main()
         {
             Console.WriteLine("╔════════════════════════════════════════════════════════════╗");
             Console.WriteLine("║  ДЕМОНСТРАЦІЯ РОБОТИ З АБСТРАКТНИМИ КЛАСАМИ ТА ПОЛІМОРФІЗМОМ  ║");
             Console.WriteLine("╚════════════════════════════════════════════════════════════╝\n");
 
-            // Створюємо масив геометричних фігур для демонстрації поліморфізму
-            List<GeometricShape> shapes = new List<GeometricShape>();
-
-        private static void Main()
-        {
             // Поліморфне створення: користувач обирає фігуру в рантаймі
             Polygon shape;
             while (true)
@@ -370,19 +299,12 @@ namespace LabWork
                 }
             }
 
-            // Додаємо створену фігуру до списку
-            shapes.Add(shape);
-
             Console.WriteLine("\n" + new string('─', 60));
             Console.WriteLine("РЕЗУЛЬТАТИ ОБЧИСЛЕНЬ");
             Console.WriteLine(new string('─', 60));
 
             // Демонстрація поліморфізму через абстрактний клас
-            foreach (var geomShape in shapes)
-            {
-                // Використовуємо метод базового абстрактного класу
-                geomShape.DisplayInfo();
-            }
+            shape.DisplayInfo();
 
             Console.WriteLine("\n" + new string('─', 60));
             Console.WriteLine("ДОДАТКОВА ІНФОРМАЦІЯ ПРО ПОЛІМОРФІЗМ");
@@ -391,36 +313,8 @@ namespace LabWork
             Console.WriteLine($"Фактичний тип об'єкта: {shape.GetType().Name}");
             Console.WriteLine($"Метод Describe() викликається динамічно: {shape.Describe()}");
 
-            Console.WriteLine("\n╔════════════════════════════════════════════════════════════╗");
-            Console.WriteLine("║  ДЕМОНСТРАЦІЯ РОБОТИ КОНСТРУКТОРІВ ТА ДЕСТРУКТОРІВ        ║");
-            Console.WriteLine("╚════════════════════════════════════════════════════════════╝");
-            Console.WriteLine("\nСтворимо кілька додаткових об'єктів для демонстрації:");
-            
-            Console.WriteLine("\n--- СТВОРЕННЯ ТРИКУТНИКА ---");
-            CreateAndDestroyTriangle();
-            
-            Console.WriteLine("\n--- Форсуємо збирання сміття для виклику деструкторів ---");
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-            
-            Console.WriteLine("\n--- СТВОРЕННЯ ЧОТИРИКУТНИКА ---");
-            CreateAndDestroyQuadrilateral();
-            
-            Console.WriteLine("\n--- Форсуємо збирання сміття для виклику деструкторів ---");
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
             Console.WriteLine("\n\nНатисніть будь-яку клавішу для завершення програми...");
             Console.ReadKey();
-            Console.WriteLine($"\n{shape.Describe()}");
-            ConsoleUI.PrintVertices(shape.Vertices, "Координати вершин:");
-            Console.WriteLine($"Площа: {shape.CalculateArea():F2}");
-
-            // Підказка для експерименту: Змініть virtual Describe() на звичайний метод у базовому класі
-            // і приберіть override у похідних (або замініть на 'new'). Тоді shape.Describe() при посиланні Polygon
-            // завжди друкуватиме базовий текст, що демонструє різницю між віртуальним та невіртуальним викликом.
         }
     }
 }
